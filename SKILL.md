@@ -1,10 +1,10 @@
 ---
 name: expediente-corporativo-gdi
-description: "Genera el expediente corporativo COMPLETO (6 documentos) de una sociedad mercantil mexicana: (1) Títulos Accionarios (Art. 125 LGSM), (2) Libro de Registro de Accionistas o Socios, (3) Libro de Variaciones de Capital, (4) Tabla de Tenencia Accionaria Vigente, (5) Apoderados y Poderes Vigentes, y (6) Historial Societario, todo en formato Word (.docx) con el diseño oficial del despacho. Entrega SIEMPRE los 6. Analiza documentos corporativos que el usuario suba (actas constitutivas, asambleas, escrituras de reforma, Constancias de Situación Fiscal) o guía una captura manual de datos. Úsalo cuando el usuario mencione: nueva empresa, nueva sociedad, expediente corporativo, títulos accionarios, generar títulos, libro de acciones, libro de socios, tenencia accionaria, apoderados y poderes, historial societario, documentos societarios, o cuando suba documentos corporativos de una sociedad mercantil mexicana."
+description: "Genera el expediente corporativo COMPLETO (7 documentos) de una sociedad mercantil mexicana: (1) Títulos Accionarios (Art. 125 LGSM), (2) Libro de Registro de Accionistas o Socios, (3) Libro de Variaciones de Capital, (4) Tabla de Tenencia Accionaria Vigente, (5) Apoderados y Poderes Vigentes, (6) Historial Societario y (7) Beneficiario Controlador (PLD — CFF, LFPIORPI y Acuerdo 115/2026), todo en formato Word (.docx) con el diseño oficial del despacho. Entrega SIEMPRE los 7. Analiza documentos corporativos que el usuario suba (actas constitutivas, asambleas, escrituras de reforma, Constancias de Situación Fiscal) o guía una captura manual de datos. Úsalo cuando el usuario mencione: nueva empresa, nueva sociedad, expediente corporativo, títulos accionarios, generar títulos, libro de acciones, libro de socios, tenencia accionaria, apoderados y poderes, historial societario, beneficiario controlador, documentos societarios, o cuando suba documentos corporativos de una sociedad mercantil mexicana."
 ---
 
 # SKILL: Administración Societaria — Expediente Corporativo Completo
-**Versión:** 5.1 · última actualización: agosto 2026 | **Formato:** V24 | **Marco:** LGSM · CCF · DOF 2016-01-29
+**Versión:** 5.3 · última actualización: septiembre 2026 | **Formato:** V24 | **Marco:** LGSM · CCF · DOF 2016-01-29 · LFPIORPI/Acuerdo 115/2026
 
 **Historial de correcciones incorporadas (no repetir estos errores — ver detalle en cada
 regla más abajo):**
@@ -119,10 +119,38 @@ regla más abajo):**
     `\\10.1.100.14\Doc_Legal\Documentación legal\Claude (Libros Corporativos y Títulos Accionarios)`.
     El skill crea una subcarpeta por sociedad (`NOMBRE_ARCHIVO`) y dentro subcarpetas por documento
     (Titulos_Accionarios, Libro_Registro_Socios, Libro_Variaciones_Capital, Tenencia_Accionaria,
-    Apoderados_y_Poderes, Historial_Societario). Así los 6 documentos quedan en la red y tanto el
+    Apoderados_y_Poderes, Historial_Societario, Beneficiario_Controlador). Así los 7 documentos quedan en la red y tanto el
     usuario como su jefe los ven. En JS la ruta va con doble backslash escapado:
     `"\\\\10.1.100.14\\Doc_Legal\\Documentación legal\\Claude (Libros Corporativos y Títulos Accionarios)"`.
     Si la red no está disponible, avisar al usuario y ofrecer guardar temporalmente en local.
+22. **NÚMEROS A LETRAS SIEMPRE CALCULADOS, NUNCA POR DICCIONARIO FIJO (v5.2).** Antes, el número
+    de acciones y el número de título se buscaban en diccionarios de pocos valores (`enPalabras`,
+    `numWord`, arreglo `numWord2`); con cualquier sociedad distinta de Administradora GDI —o del
+    5º título en adelante— imprimían `undefined`. Ahora existe la función `numeroALetras(num, genero)`
+    (género "f" para acciones, "m" para el número de título) y `tituloEnLetras(t)`, que convierten
+    CUALQUIER entero a letras en español con el género correcto. `enPalabras` se conserva solo como
+    override manual: el patrón es `enPalabras[x] || numeroALetras(x)`. Verificado que reproduce
+    exactamente las frases previas del diccionario. NUNCA volver a usar arreglos/diccionarios fijos
+    de números sin salida alterna.
+23. **APARTADO OBLIGATORIO DE BENEFICIARIO CONTROLADOR (PLD) — DOCUMENTO 7 (v5.3).** TODO expediente
+    corporativo (sociedades Y fideicomisos) debe incluir el documento "Beneficiario Controlador",
+    generado por `buildBeneficiarioControlador()` (gen_libros.js). Marco fijo (`BC_MARCO`/`BC_CRITERIO`):
+    CFF arts. 32-B Ter/Quáter/Quinquies; Reglas 2.8.1.20-2.8.1.23 RMF; LFPIORPI + reforma jul-2025 +
+    Reglamento; GAFI 24 y 25; y **Acuerdo 115/2026 (SHCP, DOF 07-ago-2026, vigor 30-nov-2026, Cap. III
+    Quinquies, arts. 23 Quinquies a 23 Quinquies 3)**. Criterio en cascada: (I) persona física con ≥25%;
+    (II) control por otros medios; (III) administración de mayor grado. **OBLIGACIÓN DE MAPEO:** cuando un
+    accionista/socio sea persona moral, hay que TRAZAR su estructura hasta la(s) persona(s) física(s)
+    (participación efectiva indirecta = producto de porcentajes a lo largo de la cadena), llenando
+    `BENEFICIARIO_CONTROLADOR` (nombre, curp, rfc, nac, pct efectivo, criterio) y `BC_MAPEO` (sociedad,
+    %, titularidad última). Datos personales de cada BC: nombre, CURP, RFC, nacionalidad, % (obtenerlos
+    de la CSF/KYC/actas). QUÉ SE IMPRIME (decisión Dirección Jurídica, sep-2026): en el .docx del
+    Documento 7 se imprimen COMPLETOS nombre, CURP, RFC, nacionalidad y porcentaje del beneficiario
+    controlador (el documento se genera para archivarse y exhibirse ante autoridad conforme al Acuerdo
+    115/2026); el soporte documental (CSF, KYC, identificaciones) se conserva en el expediente por un
+    mínimo de diez años. Las cargas por usufructo se atribuyen al usufructuario mientras siga como
+    titular en las tenencias vigentes; la nuda propiedad se anota como referencia. Registro del BC:
+    conservar mínimo 10 años. Ver plantilla detallada de fideicomiso en la carpeta maestra de red
+    "PLANTILLA Expediente Fideicomiso".
 19. **EN LOS CUADROS ACCIONARIOS, EL RFC VA DEBAJO DEL NOMBRE (salto de línea real).** docx NO
     rompe línea con un "\n" suelto dentro de un `<w:t>` (lo renderiza pegado). Las celdas
     (`hdrCell`/`dataCell`) usan el helper `mlRuns()`, que parte el texto por "\n" y emite un
@@ -144,7 +172,7 @@ Cuando el usuario escriba cualquiera de estas frases (o similares):
 
 Guía al usuario a través de un flujo conversacional estructurado para capturar los datos de cualquier sociedad mercantil mexicana y genera automáticamente los documentos corporativos Word (.docx) correspondientes:
 
-**EXPEDIENTE COMPLETO POR DEFECTO = 6 documentos.** Siempre generar y entregar los 6, aunque el usuario no los liste uno por uno.
+**EXPEDIENTE COMPLETO POR DEFECTO = 7 documentos.** Siempre generar y entregar los 7, aunque el usuario no los liste uno por uno.
 
 - **Grupo A** (S.A., S.A. de C.V., S.A.P.I., S.A.S., S. en C. por A.):
   1. Títulos Accionarios individuales (Art. 125 LGSM) — uno por accionista, con cuponera de 9 dividendos  *(script gen_titulos.js)*
@@ -153,6 +181,7 @@ Guía al usuario a través de un flujo conversacional estructurado para capturar
   4. Tabla de Tenencia Accionaria Vigente  *(gen_libros.js — `buildTenencia`)*
   5. Apoderados y Poderes Vigentes  *(gen_libros.js — `buildApoderados`)*
   6. Historial Societario  *(gen_libros.js — `buildHistorial`)*
+  7. Beneficiario Controlador (PLD)  *(gen_libros.js — `buildBeneficiarioControlador`)*
 
 - **Grupo B** (S. de R.L., S.C., S. en N.C., S. en C.S., A.C.):
   1. Libro de Registro de Socios / Asociados
@@ -160,8 +189,9 @@ Guía al usuario a través de un flujo conversacional estructurado para capturar
   3. Tabla de Tenencia (Partes Sociales) Vigente
   4. Apoderados y Poderes Vigentes
   5. Historial Societario
+  6. Beneficiario Controlador (PLD)
 
-**Datos que capturan los documentos 4-6** (además de EMP/SOCIOS): la Tenencia se agrega automáticamente desde la estructura vigente de accionistas/socios (agregando `anotacion` a un socio si tiene usufructo u otra carga); Apoderados usa `CONSEJO_VIGENTE` (nombre/cargo/designación) + `APODERADOS` (si va vacío se imprime una ALERTA pidiendo revisar la escritura de poderes); Historial usa el arreglo `HISTORIAL` (línea de tiempo: fecha, instrumento, movimiento, asiento). Ver los datos DEMO en `gen_libros.js`.
+**Datos que capturan los documentos 4-7** (además de EMP/SOCIOS): la Tenencia se agrega automáticamente desde la estructura vigente de accionistas/socios (agregando `anotacion` a un socio si tiene usufructo u otra carga); Apoderados usa `CONSEJO_VIGENTE` (nombre/cargo/designación) + `APODERADOS` (si va vacío se imprime una ALERTA pidiendo revisar la escritura de poderes); Historial usa el arreglo `HISTORIAL` (línea de tiempo: fecha, instrumento, movimiento, asiento). El **Beneficiario Controlador** (regla 23) usa `BENEFICIARIO_CONTROLADOR` (personas físicas que son BC, con CURP/RFC/nacionalidad/% y criterio), `BC_MAPEO` (cadena de control cuando hay socios personas morales) y `BC_CONCLUSION`; el marco normativo y el criterio (`BC_MARCO`/`BC_CRITERIO`) son fijos. Ver los datos DEMO en `gen_libros.js`.
 
 ---
 
@@ -748,12 +778,12 @@ RFC             | Nombre / Razón Social        | Domicilio Fiscal
 
 5. Al confirmar regeneración:
    - Sustituir todos los bloques `PENDIENTE DE CONSTANCIA DE SITUACIÓN FISCAL` por el domicilio real.
-   - Regenerar usando el mismo script Node.js (`gen_libros_asiento.js`) con las variables de domicilio actualizadas.
+   - Regenerar usando el mismo script Node.js (`gen_libros.js`) con las variables de domicilio actualizadas.
    - Presentar los documentos al usuario.
 
 ### Nota técnica — variables de domicilio en el script
 
-En el script `/tmp/gdi_gen/gen_libros_asiento.js`, el domicilio de cada accionista se pasa como la constante `DOM_PENDING`. Al regenerar, esta constante debe reemplazarse por un objeto de domicilios indexado por RFC:
+En el script `gen_libros.js`, el domicilio de cada accionista se pasa como la constante `DOM_PENDING`. Al regenerar, esta constante debe reemplazarse por un objeto de domicilios indexado por RFC:
 
 ```javascript
 const DOMICILIOS = {
@@ -1040,7 +1070,7 @@ function summaryTable(s, emp, numDesde, numHasta) {
   const vals = [
     s.titulo,
     `Serie ${s.serie} — ${s.tipo_capital.toLowerCase()}`,
-    `${fmtNum(s.acciones)} (${enPalabras[s.acciones]} ${s.serie === "A" ? "acciones" : "acciones"})`,
+    `${fmtNum(s.acciones)} (${enPalabras[s.acciones] || numeroALetras(s.acciones)} ${s.serie === "A" ? "acciones" : "acciones"})`,
     `Del ${fmtNum(numDesde)} al ${fmtNum(numHasta)}`,
   ];
   const hdrRows = [new TableRow({
@@ -1235,7 +1265,7 @@ function cuponesPage(s, emp) {
         children: [
           para(run("CUPONES PARA PAGO DE DIVIDENDOS", { bold: true, size: 18, color: "FFFFFF" }), AlignmentType.LEFT, { before: 0, after: 12 }),
           para(run(`${emp.nombre_completo}   ·   R.F.C.: ${emp.rfc}`, { size: 14, color: "FFFFFF" }), AlignmentType.LEFT, { before: 0, after: 0 }),
-          para(run(`Título N° ${s.titulo} (${numWord[s.titulo]})   ·   ${fmtNum(s.acciones)} Acciones Serie ${s.serie}   ·   ${s.nombre.toUpperCase()}`, { bold: true, size: 14, color: "FFFFFF" }), AlignmentType.LEFT, { before: 0, after: 0 }),
+          para(run(`Título N° ${s.titulo} (${tituloEnLetras(s.titulo)})   ·   ${fmtNum(s.acciones)} Acciones Serie ${s.serie}   ·   ${s.nombre.toUpperCase()}`, { bold: true, size: 14, color: "FFFFFF" }), AlignmentType.LEFT, { before: 0, after: 0 }),
         ],
       })],
     })],
@@ -1256,6 +1286,53 @@ function cuponesPage(s, emp) {
 // ─────────────────────────────────────────────────────
 function fmtMXN(v) { return `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} M.N.`; }
 function fmtNum(n) { return n.toLocaleString("en-US"); }
+
+// Convierte CUALQUIER entero >= 0 a letras en español.
+// genero: "f" (por defecto, para "acciones") | "m" (para "número de título", "millones").
+// Reproduce exactamente las frases del diccionario enPalabras y nunca imprime "undefined".
+function numeroALetras(num, genero = "f") {
+  num = Math.round(Number(num));
+  if (!isFinite(num) || num < 0) return String(num);
+  if (num === 0) return "cero";
+  const uni = ["", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve",
+    "diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve",
+    "veinte", "veintiuno", "veintidós", "veintitrés", "veinticuatro", "veinticinco", "veintiséis", "veintisiete", "veintiocho", "veintinueve"];
+  const dec = ["", "", "", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
+  const cenM = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+  const cenF = ["", "ciento", "doscientas", "trescientas", "cuatrocientas", "quinientas", "seiscientas", "setecientas", "ochocientas", "novecientas"];
+  // g: "f" | "m" (género de centenas/decenas); apoc: true → "uno"→"un", "veintiuno"→"veintiún" (antes de mil/millón)
+  function grupo(x, g, apoc) {
+    if (x === 0) return "";
+    if (x === 100) return "cien";
+    const c = Math.floor(x / 100), r = x % 100;
+    const cen = (g === "f" ? cenF : cenM)[c];
+    let resto = "";
+    if (r > 0 && r < 30) {
+      resto = uni[r];
+      if (r === 1) resto = apoc ? "un" : (g === "f" ? "una" : "uno");
+      if (r === 21) resto = apoc ? "veintiún" : (g === "f" ? "veintiuna" : "veintiuno");
+    } else if (r >= 30) {
+      const d = Math.floor(r / 10), u = r % 10;
+      if (u === 0) resto = dec[d];
+      else {
+        let uu = uni[u];
+        if (u === 1) uu = apoc ? "un" : (g === "f" ? "una" : "uno");
+        resto = `${dec[d]} y ${uu}`;
+      }
+    }
+    return (cen && resto) ? `${cen} ${resto}` : (cen || resto);
+  }
+  let out = "";
+  const millones = Math.floor(num / 1000000);
+  const miles = Math.floor((num % 1000000) / 1000);
+  const resto = num % 1000;
+  if (millones > 0) out += millones === 1 ? "un millón" : `${grupo(millones, "m", true)} millones`;
+  if (miles > 0) out += (out ? " " : "") + (miles === 1 ? "mil" : `${grupo(miles, genero, true)} mil`);
+  if (resto > 0) out += (out ? " " : "") + grupo(resto, genero, false);
+  return out.trim();
+}
+// Número de título en letras y MAYÚSCULAS (masculino: "N° 5 (CINCO)"). Nunca "undefined".
+function tituloEnLetras(t) { return numeroALetras(parseInt(t, 10) || 0, "m").toUpperCase(); }
 
 const enPalabras = {
   25000: "veinticinco mil",
@@ -1358,7 +1435,7 @@ const SOCIOS = [
 // ─────────────────────────────────────────────────────
 function buildTitle(s, emp, isFirst) {
   const tituloNum = parseInt(s.titulo);
-  const numWord2 = ["", "UNO", "DOS", "TRES", "CUATRO"][tituloNum];
+  const numWord2 = tituloEnLetras(s.titulo);
 
   // Description paragraph runs
   // ⚠️ "correspondientes al capital social FIJO/VARIABLE" (no "parte fijo/fija" — falla en género).
@@ -1366,13 +1443,13 @@ function buildTitle(s, emp, isFirst) {
   // de la sociedad: no mezclar capital fijo y variable (corrección 12).
   const descRuns = [
     run("Este título definitivo ampara "),
-    run(`${fmtNum(s.acciones)} (${enPalabras[s.acciones] || s.acciones}) ACCIONES ORDINARIAS NOMINATIVAS DE LA SERIE ${s.serie}`, { bold: true }),
+    run(`${fmtNum(s.acciones)} (${enPalabras[s.acciones] || numeroALetras(s.acciones)}) ACCIONES ORDINARIAS NOMINATIVAS DE LA SERIE ${s.serie}`, { bold: true }),
     run(`, correspondientes al capital social `),
     run(s.tipo_capital.toUpperCase(), { bold: true }),
     run(`, con valor nominal de $1.00 M.N. (un peso 00/100, Moneda Nacional) cada una, identificadas con los números del `),
     run(`${fmtNum(s.numDesde)} al ${fmtNum(s.numHasta)}`, { bold: true }),
     run(`, de un total de `),
-    run(`${fmtNum(s.serie_total)} (${enPalabras[s.serie_total] || fmtNum(s.serie_total)})`, { bold: true }),
+    run(`${fmtNum(s.serie_total)} (${enPalabras[s.serie_total] || numeroALetras(s.serie_total)})`, { bold: true }),
     run(` acciones que integran la Serie ${s.serie} (capital ${s.tipo_capital.toLowerCase()}) de la Sociedad. `),
     run("Íntegramente pagadas y liberadas.", { bold: true }),
   ];
@@ -2375,6 +2452,56 @@ function buildHistorial() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// DOC 6: BENEFICIARIO CONTROLADOR (PLD) — Acuerdo 115/2026
+// (marco fijo; EDITAR por sociedad BENEFICIARIO_CONTROLADOR / BC_MAPEO / BC_CONCLUSION
+//  con el resultado del mapeo de la cadena de control hasta persona física)
+// ─────────────────────────────────────────────────────────────────────
+const BC_MARCO = "El presente apartado se formula conforme a los artículos 32-B Ter, 32-B Quáter y 32-B Quinquies del Código Fiscal de la Federación; las Reglas 2.8.1.20 a 2.8.1.23 de la Resolución Miscelánea Fiscal; la Ley Federal para la Prevención e Identificación de Operaciones con Recursos de Procedencia Ilícita (LFPIORPI), su reforma de julio de 2025 y su Reglamento; las Recomendaciones 24 y 25 del GAFI; y el Acuerdo 115/2026 (SHCP, DOF 07 de agosto de 2026; en vigor el 30 de noviembre de 2026), que regula al beneficiario controlador en su Capítulo III Quinquies (artículos 23 Quinquies a 23 Quinquies 3).";
+const BC_CRITERIO = "Es beneficiario controlador la persona física que, directa o indirectamente, obtiene el beneficio de la persona moral o ejerce su control último, conforme al siguiente orden de prelación: (I) posee el 25% o más de la participación; (II) ejerce el control por otros medios (imponer decisiones, designar a la administración o ejercer el voto respecto de más del 50%); o (III) en su defecto, ocupa la administración de mayor grado. La información y documentación soporte debe obtenerse, conservarse y mantenerse actualizada durante la relación, y el registro del beneficiario controlador debe conservarse por un mínimo de diez años (Art. 10 Septies 3 del Acuerdo 115/2026).";
+// EDITAR por sociedad: personas físicas que resultan beneficiario controlador (tras el mapeo).
+// { nombre, curp, rfc, nac, pct, criterio }
+const BENEFICIARIO_CONTROLADOR = [];
+// EDITAR por sociedad: mapeo de accionistas personas morales hasta persona física.
+// { sociedad, pct, titularidad }
+const BC_MAPEO = [];
+const BC_CONCLUSION = ""; // EDITAR (opcional)
+
+function buildBeneficiarioControlador() {
+  const ch = docHeader("BENEFICIARIO CONTROLADOR", [
+    bodyPara([r("Marco normativo. ", { bold: true }), r(BC_MARCO)]),
+    bodyPara([r("Criterio de identificación. ", { bold: true }), r(BC_CRITERIO)]),
+  ]);
+  ch.push(blankPara());
+  ch.push(bodyPara([r("Beneficiarios controladores identificados:", { bold: true })]));
+  const C = [2400, 2200, 1000, 1602];
+  const rows = [new TableRow({ tableHeader: true, children: [
+    hdrCell("NOMBRE", C[0]), hdrCell("CURP / RFC", C[1]), hdrCell("NACIONALIDAD", C[2]), hdrCell("% Y/O CRITERIO", C[3]),
+  ] })];
+  BENEFICIARIO_CONTROLADOR.forEach(b => rows.push(new TableRow({ children: [
+    dataCell(b.nombre, C[0], AlignmentType.LEFT),
+    dataCell(`${b.curp || ""}\n${b.rfc || ""}`, C[1], AlignmentType.LEFT),
+    dataCell(b.nac || "Mexicana", C[2], AlignmentType.CENTER),
+    dataCell(`${b.pct || ""}\n${b.criterio || ""}`, C[3], AlignmentType.CENTER),
+  ] })));
+  ch.push(new Table({ width: { size: TBL_W, type: WidthType.DXA }, columnWidths: C, rows }));
+  if (BC_MAPEO.length) {
+    ch.push(blankPara());
+    ch.push(bodyPara([r("Mapeo de la cadena de control (hasta persona física). ", { bold: true }),
+      r("Los accionistas/socios personas morales no son beneficiario controlador final; se traza su estructura hasta las personas físicas que las controlan:")]));
+    const M = [3200, 1000, 3002];
+    const mrows = [new TableRow({ tableHeader: true, children: [
+      hdrCell("ACCIONISTA / SOCIO (PERSONA MORAL)", M[0]), hdrCell("%", M[1]), hdrCell("TITULARIDAD ÚLTIMA (PERSONA FÍSICA)", M[2]),
+    ] })];
+    BC_MAPEO.forEach(m => mrows.push(new TableRow({ children: [
+      dataCell(m.sociedad, M[0], AlignmentType.LEFT), dataCell(m.pct || "", M[1], AlignmentType.CENTER), dataCell(m.titularidad, M[2], AlignmentType.LEFT),
+    ] })));
+    ch.push(new Table({ width: { size: TBL_W, type: WidthType.DXA }, columnWidths: M, rows: mrows }));
+  }
+  if (BC_CONCLUSION) { ch.push(blankPara()); ch.push(bodyPara([r("Conclusión. ", { bold: true }), r(BC_CONCLUSION)])); }
+  return ch;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // MAIN
 // ─────────────────────────────────────────────────────────────────────
 async function main() {
@@ -2385,11 +2512,13 @@ async function main() {
   const carpetaTenencia    = path.join(carpetaEmpresa, "Tenencia_Accionaria");
   const carpetaApoderados  = path.join(carpetaEmpresa, "Apoderados_y_Poderes");
   const carpetaHistorial   = path.join(carpetaEmpresa, "Historial_Societario");
+  const carpetaBC          = path.join(carpetaEmpresa, "Beneficiario_Controlador");
   fs.mkdirSync(carpetaVariaciones, { recursive: true });
   fs.mkdirSync(carpetaRegistro,    { recursive: true });
   fs.mkdirSync(carpetaTenencia,    { recursive: true });
   fs.mkdirSync(carpetaApoderados,  { recursive: true });
   fs.mkdirSync(carpetaHistorial,   { recursive: true });
+  fs.mkdirSync(carpetaBC,          { recursive: true });
 
   const sectionProps = {
     page: {
@@ -2433,6 +2562,12 @@ async function main() {
   const out5 = path.join(carpetaHistorial, `Historial_Societario_${NOMBRE_ARCHIVO}.docx`);
   fs.writeFileSync(out5, await Packer.toBuffer(doc5));
   console.log(`✅ ${out5}`);
+
+  // ── DOC 6: Beneficiario Controlador (PLD) ─────────────────────────
+  const doc6 = new Document({ sections: [{ properties: sectionProps, children: buildBeneficiarioControlador() }] });
+  const out6 = path.join(carpetaBC, `Beneficiario_Controlador_${NOMBRE_ARCHIVO}.docx`);
+  fs.writeFileSync(out6, await Packer.toBuffer(doc6));
+  console.log(`✅ ${out6}`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
